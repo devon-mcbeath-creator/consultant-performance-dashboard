@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intuit Money Payments · Consultant Performance Dashboard FY26</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800&display=swap');
+  :root {
+    --teal: #00B896; --purple: #6C5FFC; --gold: #F5A623; --red: #F04E4E;
+    --black: #000000; --gray: #555555; --light: #F7F8FA; --border: #E8EAED;
+    --font: 'Avenir Next', 'Nunito Sans', system-ui, -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: #fff; color: var(--black); font-size: 13px; }
+  a { color: var(--teal); }
+
+  /* ── HEADER ── */
+  .header { background: #fff; border-bottom: 2px solid var(--border); padding: 18px 28px 14px; display: flex; align-items: flex-end; justify-content: space-between; }
+  .header-left h1 { font-size: 20px; font-weight: 800; letter-spacing: -.3px; color: var(--black); }
+  .header-left h1 span { color: var(--teal); }
+  .header-left p { font-size: 11.5px; color: var(--gray); margin-top: 3px; }
+  .header-badge { background: var(--light); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-size: 11px; color: var(--gray); text-align: right; line-height: 1.7; }
+  .header-badge strong { color: var(--black); }
+
+  /* ── KPI SELECTOR ── */
+  .kpi-bar { background: var(--light); border-bottom: 1px solid var(--border); padding: 10px 28px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .kpi-bar-label { font-size: 11px; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: .5px; margin-right: 4px; white-space: nowrap; }
+  .kpi-toggle { display: flex; align-items: center; gap: 5px; background: #fff; border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; cursor: pointer; font-size: 11.5px; color: var(--gray); transition: all .15s; user-select: none; }
+  .kpi-toggle input { display: none; }
+  .kpi-toggle.active { background: var(--teal); border-color: var(--teal); color: #fff; font-weight: 600; }
+  .kpi-toggle .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; opacity: .6; }
+
+  /* ── KPI CARDS ── */
+  .kpi-section { padding: 20px 28px 8px; }
+  .kpi-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+  .kpi-card { background: #fff; border: 1.5px solid var(--border); border-radius: 10px; padding: 14px 18px; min-width: 150px; flex: 1 1 150px; transition: box-shadow .15s; }
+  .kpi-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+  .kpi-card.hidden { display: none; }
+  .kpi-card .label { font-size: 11px; color: var(--gray); text-transform: uppercase; letter-spacing: .4px; font-weight: 600; margin-bottom: 6px; }
+  .kpi-card .value { font-size: 26px; font-weight: 800; color: var(--black); line-height: 1; }
+  .kpi-card .sub { font-size: 11px; color: var(--gray); margin-top: 4px; }
+  .kpi-card.accent-teal { border-left: 4px solid var(--teal); }
+  .kpi-card.accent-purple { border-left: 4px solid var(--purple); }
+  .kpi-card.accent-gold { border-left: 4px solid var(--gold); }
+  .kpi-card.accent-red { border-left: 4px solid var(--red); }
+
+  /* ── GLOBAL FILTER BAR ── */
+  .global-filter-bar { background: #fff; border-bottom: 2px solid var(--teal); padding: 12px 28px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .gfb-label { font-size: 11px; font-weight: 800; color: var(--black); text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; margin-right: 4px; }
+  .gfb-group { display: flex; flex-direction: column; gap: 2px; }
+  .gfb-group label { font-size: 9.5px; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: .5px; }
+  .gfb-sel { padding: 7px 14px; border: 1.5px solid var(--border); border-radius: 7px; font-family: var(--font); font-size: 12px; font-weight: 600; outline: none; background: #fff; cursor: pointer; min-width: 180px; color: var(--black); }
+  .gfb-sel:focus { border-color: var(--teal); }
+  .gfb-sel.active { border-color: var(--teal); background: #F0FBF8; color: var(--teal); }
+  .gfb-badge { display: none; align-items: center; gap: 8px; background: var(--teal); color: #fff; padding: 5px 13px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-left: 6px; }
+  .gfb-badge.visible { display: flex; }
+  .gfb-clear { background: none; border: none; color: inherit; cursor: pointer; font-size: 14px; font-weight: 800; padding: 0; line-height: 1; }
+  .gfb-scope { font-size: 11px; color: var(--gray); font-style: italic; }
+
+  /* ── AGENT MULTI-SELECT PICKER ── */
+  .agent-picker { position: relative; }
+  .agent-picker-btn { display: flex; align-items: center; gap: 8px; padding: 7px 14px; border: 1.5px solid var(--border); border-radius: 7px; font-family: var(--font); font-size: 12px; font-weight: 600; color: var(--black); background: #fff; cursor: pointer; min-width: 180px; justify-content: space-between; white-space: nowrap; transition: border-color .15s, background .15s; }
+  .agent-picker-btn:hover { border-color: var(--teal); }
+  .agent-picker-btn.active { border-color: var(--teal); background: #F0FBF8; color: var(--teal); }
+  .agent-picker-btn .ap-arrow { font-size: 9px; opacity: .45; transition: transform .15s; }
+  .agent-picker-btn.open .ap-arrow { transform: rotate(180deg); opacity: .7; }
+  .agent-picker-panel { display: none; position: absolute; top: calc(100% + 6px); left: 0; z-index: 300; background: #fff; border: 1.5px solid var(--border); border-radius: 10px; box-shadow: 0 8px 32px rgba(0,0,0,.13); width: 270px; }
+  .agent-picker-panel.open { display: block; }
+  .ap-search-row { padding: 10px 10px 8px; border-bottom: 1px solid var(--border); }
+  .ap-search-row input { width: 100%; padding: 6px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-family: var(--font); font-size: 12px; outline: none; }
+  .ap-search-row input:focus { border-color: var(--teal); }
+  .ap-actions { display: flex; gap: 6px; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+  .ap-act-btn { background: none; border: 1px solid var(--border); border-radius: 5px; padding: 3px 10px; font-size: 11px; cursor: pointer; font-family: var(--font); color: var(--gray); transition: all .12s; }
+  .ap-act-btn:hover { border-color: var(--teal); color: var(--teal); }
+  .ap-list { max-height: 240px; overflow-y: auto; padding: 5px 0; }
+  .ap-item { display: flex; align-items: center; gap: 9px; padding: 6px 12px; cursor: pointer; font-size: 12px; color: var(--black); transition: background .1s; }
+  .ap-item:hover { background: #F0FBF8; }
+  .ap-item input[type=checkbox] { accent-color: var(--teal); cursor: pointer; width: 13px; height: 13px; flex-shrink: 0; }
+  .ap-item.ap-hidden { display: none; }
+  .ap-empty { padding: 12px; font-size: 12px; color: #AAA; text-align: center; }
+
+  /* ── SECTION HEADERS ── */
+  .section { padding: 24px 28px 0; }
+  .section-title { font-size: 15px; font-weight: 800; color: var(--black); margin-bottom: 4px; }
+  .section-sub { font-size: 12px; color: var(--gray); margin-bottom: 16px; }
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 20px 28px; }
+
+  /* ── COHORT CARDS ── */
+  .cohort-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+  .cohort-card { border: 1.5px solid var(--border); border-radius: 12px; padding: 18px 20px; background: #fff; }
+  .cohort-card .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: .4px; margin-bottom: 10px; }
+  .badge-fte { background: #E6F9F5; color: var(--teal); }
+  .badge-cw { background: #EEEEFF; color: var(--purple); }
+  .badge-partner { background: #FEF5E7; color: var(--gold); }
+  .cohort-card h3 { font-size: 13px; font-weight: 700; margin-bottom: 14px; color: var(--black); }
+  .cohort-stat { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .cohort-stat:last-child { border-bottom: none; }
+  .cohort-stat .stat-label { font-size: 12px; color: var(--gray); }
+  .cohort-stat .stat-value { font-size: 13px; font-weight: 700; color: var(--black); }
+  .stat-value.good { color: var(--teal); }
+  .stat-value.warn { color: var(--gold); }
+  .stat-value.bad { color: var(--red); }
+
+  /* ── CHARTS ── */
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; margin-bottom: 20px; }
+  .chart-box { border: 1.5px solid var(--border); border-radius: 12px; padding: 16px 20px; background: #fff; }
+  .chart-box h4 { font-size: 12px; font-weight: 700; color: var(--black); margin-bottom: 12px; text-transform: uppercase; letter-spacing: .4px; }
+  .chart-box canvas { max-height: 200px; }
+  .chart-box.l3-chart { display: flex; flex-direction: column; }
+  .chart-box.l3-chart h4 { flex-shrink: 0; }
+  .chart-box.l3-chart .chart-inner { flex: 1; position: relative; height: 520px; }
+  .chart-box.l3-chart .chart-inner canvas { max-height: none !important; }
+  .l3-legend { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+
+  /* ── AGENT TABLE ── */
+  .table-controls { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+  .search-box { padding: 7px 12px; border: 1.5px solid var(--border); border-radius: 7px; font-family: var(--font); font-size: 12px; width: 220px; outline: none; }
+  .search-box:focus { border-color: var(--teal); }
+  .filter-sel { padding: 7px 12px; border: 1.5px solid var(--border); border-radius: 7px; font-family: var(--font); font-size: 12px; outline: none; background: #fff; cursor: pointer; }
+  .filter-sel:focus { border-color: var(--teal); }
+  .table-wrap { overflow-x: auto; border: 1.5px solid var(--border); border-radius: 10px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th { background: var(--light); padding: 10px 12px; text-align: left; font-size: 10.5px; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: .4px; cursor: pointer; white-space: nowrap; border-bottom: 1.5px solid var(--border); user-select: none; }
+  thead th:hover { color: var(--teal); }
+  thead th .sort-icon { margin-left: 4px; opacity: .4; }
+  thead th.sorted .sort-icon { opacity: 1; color: var(--teal); }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #F7FBF9; }
+  tbody td { padding: 9px 12px; color: var(--black); white-space: nowrap; }
+  .type-badge { display: inline-block; padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 700; }
+  .type-FTE { background: #E6F9F5; color: #008870; }
+  .type-CW { background: #EEEEFF; color: #5048C0; }
+  .type-PARTNER { background: #FEF5E7; color: #C07A00; }
+  .bar-cell { display: flex; align-items: center; gap: 6px; }
+  .mini-bar { height: 6px; border-radius: 3px; background: var(--border); flex: 1; min-width: 50px; position: relative; }
+  .mini-bar-fill { height: 100%; border-radius: 3px; background: var(--teal); }
+  .mini-bar-fill.warn { background: var(--gold); }
+  .mini-bar-fill.bad { background: var(--red); }
+  .zero-row td { color: #CCC; }
+  td.right { text-align: right; }
+  td.num { font-variant-numeric: tabular-nums; }
+  .highlight-top { font-weight: 700; color: var(--teal); }
+  .inactive-tag { font-size: 10px; color: #BBB; font-style: italic; }
+
+  /* ── MANAGER GROUP ROWS ── */
+  tr.mgr-row { background: var(--light); cursor: pointer; user-select: none; }
+  tr.mgr-row:hover { background: #EDF9F6; }
+  tr.mgr-row td { padding: 10px 12px; border-bottom: 2px solid var(--border); }
+  tr.mgr-row .mgr-name { font-size: 13px; font-weight: 800; color: var(--black); display: flex; align-items: center; gap: 8px; }
+  tr.mgr-row .mgr-chevron { display: inline-block; transition: transform .2s; font-size: 11px; color: var(--teal); }
+  tr.mgr-row.collapsed .mgr-chevron { transform: rotate(-90deg); }
+  tr.mgr-row .mgr-meta { font-size: 11px; color: var(--gray); font-weight: 400; margin-left: 4px; }
+  tr.agent-row td:first-child { padding-left: 28px; }
+  tr.agent-row.hidden-by-mgr { display: none; }
+  .mgr-stat { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; font-weight: 700; padding: 2px 8px; border-radius: 10px; background: rgba(0,184,150,.1); color: var(--teal); margin-right: 4px; }
+  .mgr-stat.warn { background: rgba(245,166,35,.1); color: var(--gold); }
+  .mgr-stat.bad { background: rgba(240,78,78,.1); color: var(--red); }
+  .view-toggle-btn { padding: 7px 14px; border-radius: 7px; border: 1.5px solid var(--border); font-family: var(--font); font-size: 12px; font-weight: 600; cursor: pointer; background: #fff; color: var(--gray); transition: all .15s; white-space: nowrap; }
+  .view-toggle-btn.active { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .expand-all-btn { padding: 6px 12px; border-radius: 7px; border: 1.5px solid var(--border); font-family: var(--font); font-size: 11.5px; cursor: pointer; background: #fff; color: var(--gray); transition: all .15s; white-space: nowrap; display: none; }
+  .expand-all-btn.visible { display: inline-block; }
+  .expand-all-btn:hover { border-color: var(--teal); color: var(--teal); }
+
+  /* ── INSIGHTS ── */
+  .insights-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 4px; }
+  .insight-card { border: 1.5px solid var(--border); border-radius: 10px; padding: 16px 18px; background: #fff; }
+  .insight-card .icon { font-size: 18px; margin-bottom: 8px; }
+  .insight-card h4 { font-size: 13px; font-weight: 700; color: var(--black); margin-bottom: 6px; }
+  .insight-card p { font-size: 12px; color: var(--gray); line-height: 1.6; }
+  .insight-card p strong { color: var(--black); }
+  .insight-card.accent-teal { border-left: 4px solid var(--teal); }
+  .insight-card.accent-red { border-left: 4px solid var(--red); }
+  .insight-card.accent-gold { border-left: 4px solid var(--gold); }
+  .insight-card.accent-purple { border-left: 4px solid var(--purple); }
+  .footer { margin-top: 32px; padding: 16px 28px; background: var(--light); border-top: 1px solid var(--border); font-size: 11px; color: var(--gray); display: flex; justify-content: space-between; }
+
+  /* ── TAB NAVIGATION ── */
+  .tab-nav { background: #fff; border-bottom: 2px solid var(--border); display: flex; gap: 0; padding: 0 28px; position: sticky; top: 0; z-index: 100; }
+  .tab-btn { padding: 12px 22px; font-family: var(--font); font-size: 13px; font-weight: 700; color: var(--gray); border: none; background: none; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all .15s; white-space: nowrap; }
+  .tab-btn:hover { color: var(--teal); }
+  .tab-btn.active { color: var(--teal); border-bottom-color: var(--teal); }
+
+  /* ── WEEK RANGE PICKER ── */
+  .week-picker-group { display: flex; flex-direction: column; gap: 2px; }
+  .week-picker-group > label { font-size: 9.5px; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: .5px; }
+  .week-picker-inner { display: flex; align-items: center; gap: 6px; }
+  .week-sel { padding: 7px 10px; border: 1.5px solid var(--border); border-radius: 7px; font-family: var(--font); font-size: 12px; font-weight: 600; outline: none; background: #fff; cursor: pointer; color: var(--black); min-width: 130px; transition: border-color .15s; }
+  .week-sel:focus { border-color: var(--teal); }
+  .week-sel.active { border-color: var(--teal); background: #F0FBF8; color: var(--teal); }
+  .week-range-dash { color: var(--gray); font-size: 12px; font-weight: 600; }
+
+  /* ── WOW TAB ── */
+  #wowTab { display: none; padding: 24px 28px 36px; }
+  .wow-period-label { display: inline-flex; align-items: center; gap: 8px; background: var(--light); border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; font-size: 12px; color: var(--gray); margin-bottom: 18px; }
+  .wow-period-label strong { color: var(--black); }
+  .wow-est-note { font-size: 11px; color: #AAA; margin-left: 10px; font-style: italic; }
+
+  .wow-delta-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+  .wow-delta-card { background: #fff; border: 1.5px solid var(--border); border-radius: 10px; padding: 14px 18px; flex: 1 1 160px; min-width: 160px; }
+  .wow-delta-card.accent-teal { border-left: 4px solid var(--teal); }
+  .wow-delta-card.accent-purple { border-left: 4px solid var(--purple); }
+  .wow-delta-card.accent-gold { border-left: 4px solid var(--gold); }
+  .wow-delta-card.accent-red { border-left: 4px solid var(--red); }
+  .wdc-label { font-size: 11px; color: var(--gray); text-transform: uppercase; letter-spacing: .4px; font-weight: 600; margin-bottom: 6px; }
+  .wdc-value { font-size: 24px; font-weight: 800; color: var(--black); line-height: 1; margin-bottom: 5px; }
+  .wdc-delta { font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 10px; }
+  .wdc-delta.up { background: #E6F9F5; color: var(--teal); }
+  .wdc-delta.down { background: #FEE9E9; color: var(--red); }
+  .wdc-delta.flat { background: var(--light); color: var(--gray); }
+  .wdc-sub { font-size: 11px; color: var(--gray); margin-top: 5px; }
+
+  .wow-charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .wow-chart-box { border: 1.5px solid var(--border); border-radius: 12px; padding: 16px 20px; background: #fff; }
+  .wow-chart-box h4 { font-size: 12px; font-weight: 700; color: var(--black); margin-bottom: 10px; text-transform: uppercase; letter-spacing: .4px; }
+  .wow-chart-box .wc-inner { position: relative; height: 175px; }
+
+  .wow-movers { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .movers-box { border: 1.5px solid var(--border); border-radius: 12px; padding: 16px 20px; background: #fff; }
+  .movers-box h4 { font-size: 12px; font-weight: 700; margin-bottom: 12px; text-transform: uppercase; letter-spacing: .4px; }
+  .movers-box h4.up { color: var(--teal); }
+  .movers-box h4.dn { color: var(--red); }
+  .movers-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .movers-table th { font-size: 10.5px; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: .4px; padding: 4px 8px; border-bottom: 1px solid var(--border); text-align: left; }
+  .movers-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .movers-table tr:last-child td { border-bottom: none; }
+  .mover-delta { font-weight: 700; padding: 2px 7px; border-radius: 8px; font-size: 11px; display: inline-block; }
+  .mover-delta.up { background: #E6F9F5; color: var(--teal); }
+  .mover-delta.dn { background: #FEE9E9; color: var(--red); }
+  .wow-section-title { font-size: 14px; font-weight: 800; color: var(--black); margin-bottom: 12px; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <h1>Intuit <span>Money Payments</span> · Consultant Performance</h1>
+    <p>Sales Ops Insights Hub &nbsp;·&nbsp; Reporting View &nbsp;·&nbsp; Contact: Sean Wilson, Money Sales Ops</p>
+  </div>
+  <div class="header-badge">
+    <strong>FY26</strong> &nbsp;|&nbsp; Aug 1, 2025 – Jul 29, 2026<br>
+    Updated <strong>May 13, 2026</strong> at 6:36 AM PT
+  </div>
+</div>
+
+<!-- GLOBAL L3 / MANAGER FILTER -->
+<div class="global-filter-bar">
+  <span class="gfb-label">📊 Business View</span>
+  <div class="gfb-group">
+    <label for="globalL3Filter">Anaplan L3</label>
+    <select class="gfb-sel" id="globalL3Filter">
+      <option value="">All Businesses</option>
+    </select>
+  </div>
+  <div class="gfb-group">
+    <label for="globalMgrFilter">Manager</label>
+    <select class="gfb-sel" id="globalMgrFilter">
+      <option value="">All Managers</option>
+    </select>
+  </div>
+  <div class="week-picker-group">
+    <label>Date Range</label>
+    <div class="week-picker-inner">
+      <select class="week-sel" id="weekFrom"></select>
+      <span class="week-range-dash">→</span>
+      <select class="week-sel" id="weekTo"></select>
+    </div>
+  </div>
+
+  <div class="gfb-group">
+    <label>Agents</label>
+    <div class="agent-picker" id="agentPicker">
+      <button class="agent-picker-btn" id="agentPickerBtn" onclick="toggleAgentPicker(event)">
+        <span id="agentPickerLabel">All Agents</span>
+        <span class="ap-arrow">▼</span>
+      </button>
+      <div class="agent-picker-panel" id="agentPickerPanel">
+        <div class="ap-search-row">
+          <input type="text" id="apSearch" placeholder="Search agents…" oninput="apFilterList()">
+        </div>
+        <div class="ap-actions">
+          <button class="ap-act-btn" onclick="apSelectAll()">Select All</button>
+          <button class="ap-act-btn" onclick="apClearAll()">Clear All</button>
+        </div>
+        <div class="ap-list" id="apList"></div>
+      </div>
+    </div>
+  </div>
+  <div class="gfb-badge" id="gfbBadge">
+    <span id="gfbBadgeText">—</span>
+    <button class="gfb-clear" onclick="clearGlobalFilters()">✕</button>
+  </div>
+  <span class="gfb-scope" id="gfbScope"></span>
+</div>
+
+<!-- TAB NAVIGATION -->
+<div class="tab-nav">
+  <button class="tab-btn active" id="tabBtnOverview" onclick="switchTab('overview')">📊 Overview</button>
+  <button class="tab-btn" id="tabBtnWow" onclick="switchTab('wow')">📈 Week-over-Week</button>
+</div>
+
+<!-- OVERVIEW TAB -->
+<div id="overviewTab">
+
+<!-- KPI SELECTOR BAR -->
+<div class="kpi-bar">
+  <span class="kpi-bar-label">Show KPIs:</span>
+  <label class="kpi-toggle active" data-kpi="calls">
+    <input type="checkbox" checked> <span class="dot"></span> Call Activity
+  </label>
+  <label class="kpi-toggle active" data-kpi="quality">
+    <input type="checkbox" checked> <span class="dot"></span> Call Quality
+  </label>
+  <label class="kpi-toggle active" data-kpi="meetings">
+    <input type="checkbox" checked> <span class="dot"></span> Meetings
+  </label>
+  <label class="kpi-toggle active" data-kpi="payments">
+    <input type="checkbox" checked> <span class="dot"></span> Payments & Conversions
+  </label>
+  <label class="kpi-toggle active" data-kpi="chats">
+    <input type="checkbox" checked> <span class="dot"></span> Chats
+  </label>
+</div>
+
+<!-- KPI CARDS (populated by renderKPIs) -->
+<div class="kpi-section">
+  <div class="kpi-grid" id="kpiGrid"></div>
+</div>
+
+<hr class="divider">
+
+<!-- COHORT COMPARISON (populated by renderCohorts) -->
+<div class="section">
+  <div class="section-title">FTE · CW · Partner Cohort Performance</div>
+  <div class="section-sub">Averages computed across active agents in current business view</div>
+  <div class="cohort-grid" id="cohortGrid"></div>
+
+  <!-- CHARTS (populated by renderCharts) -->
+  <div id="chartLegend" class="l3-legend"></div>
+  <div class="chart-row">
+    <div class="chart-box l3-chart">
+      <h4>Signups — Stack Ranked within L3</h4>
+      <div class="chart-inner"><canvas id="chartConversion"></canvas></div>
+    </div>
+    <div class="chart-box l3-chart">
+      <h4>Input→GNA% — Stack Ranked within L3</h4>
+      <div class="chart-inner"><canvas id="chartScatter"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- AGENT TABLE -->
+<div class="section">
+  <div class="section-title">Agent Performance Detail</div>
+  <div class="section-sub">All agents · FY26 · Click any column header to sort</div>
+  <div class="table-controls">
+    <button class="view-toggle-btn" id="flatViewBtn" onclick="setView('flat')">Flat List</button>
+    <button class="view-toggle-btn active" id="groupViewBtn" onclick="setView('group')">Group by Manager</button>
+    <button class="expand-all-btn visible" id="expandAllBtn" onclick="toggleAllGroups()">Collapse All</button>
+    <input class="search-box" id="searchBox" type="text" placeholder="🔍  Search agent or manager…">
+    <select class="filter-sel" id="typeFilter">
+      <option value="">All Types</option>
+      <option value="FTE">FTE</option>
+      <option value="CW">CW</option>
+      <option value="PARTNER">PARTNER</option>
+    </select>
+    <select class="filter-sel" id="statusFilter">
+      <option value="">All Activity</option>
+      <option value="active">Active Only</option>
+      <option value="inactive">Inactive Only</option>
+    </select>
+    <select class="filter-sel" id="managerFilter">
+      <option value="">All Managers</option>
+    </select>
+    <span id="rowCount" style="font-size:11px;color:var(--gray);margin-left:4px;"></span>
+  </div>
+  <div class="table-wrap">
+    <table id="agentTable">
+      <thead>
+        <tr>
+          <th data-col="name">Agent <span class="sort-icon">↕</span></th>
+          <th data-col="type">Type <span class="sort-icon">↕</span></th>
+          <th data-col="manager">Manager <span class="sort-icon">↕</span></th>
+          <th data-col="inputs" class="right">Inputs <span class="sort-icon">↕</span></th>
+          <th data-col="totalCalls" class="right">Total Calls <span class="sort-icon">↕</span></th>
+          <th data-col="callsDay" class="right">Calls/Day <span class="sort-icon">↕</span></th>
+          <th data-col="aht" class="right">AHT <span class="sort-icon">↕</span></th>
+          <th data-col="recPct" class="right">Rec% <span class="sort-icon">↕</span></th>
+          <th data-col="mtgAttPct" class="right">Mtg Att% <span class="sort-icon">↕</span></th>
+          <th data-col="signups" class="right">Signups <span class="sort-icon">↕</span></th>
+          <th data-col="gna" class="right">GNA <span class="sort-icon">↕</span></th>
+          <th data-col="inputSignup" class="right">In→Signup% <span class="sort-icon">↕</span></th>
+          <th data-col="inputGna" class="right">In→GNA% <span class="sort-icon">↕</span></th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- INSIGHTS (populated by renderInsights) -->
+<div class="section" style="padding-bottom: 28px;">
+  <div class="section-title">Key Insights — Productivity &amp; Outcome Gaps</div>
+  <div class="section-sub" id="insightsSub">Auto-generated from FY26 data · business view</div>
+  <div class="insights-grid" id="insightsGrid"></div>
+</div>
+
+</div><!-- /overviewTab -->
+
+<!-- WOW TAB -->
+<div id="wowTab">
+  <div class="wow-period-label" id="wowPeriodLabel">
+    <strong id="wowPeriodText">—</strong>
+    <span class="wow-est-note">Weekly estimates distributed from YTD snapshot · select a narrower range for WoW views</span>
+  </div>
+  <div class="wow-section-title">Last-Week vs. Prior-Week KPI Delta</div>
+  <div class="wow-delta-grid" id="wowDeltaGrid"></div>
+  <div class="wow-section-title">Weekly Trends</div>
+  <div class="wow-charts-grid">
+    <div class="wow-chart-box"><h4>Signups · Weekly</h4><div class="wc-inner"><canvas id="wowChartSignups"></canvas></div></div>
+    <div class="wow-chart-box"><h4>GNA · Weekly</h4><div class="wc-inner"><canvas id="wowChartGna"></canvas></div></div>
+    <div class="wow-chart-box"><h4>Inputs · Weekly</h4><div class="wc-inner"><canvas id="wowChartInputs"></canvas></div></div>
+    <div class="wow-chart-box"><h4>Input→GNA% · Weekly</h4><div class="wc-inner"><canvas id="wowChartConv"></canvas></div></div>
+  </div>
+  <div class="wow-section-title">Week-over-Week Movers (Signups vs. Prior Week)</div>
+  <div class="wow-movers">
+    <div class="movers-box"><h4 class="up">🏆 Top Improvers</h4><div id="wowMoversUp"></div></div>
+    <div class="movers-box"><h4 class="dn">📉 Biggest Declines</h4><div id="wowMoversDn"></div></div>
+  </div>
+</div><!-- /wowTab -->
+
+<div class="footer">
+  <span>Source: Sales Ops Insights Hub · Money Sales · Tableau Server (tableau.a.intuit.com)</span>
+  <span>FY26 · 8/1/2025–7/29/2026 · Last updated 5/13/2026</span>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   DATA
+═══════════════════════════════════════════════════════════ */
+// [type, manager, name, inputs, totalCalls, callsDay, callAHT, recPct, mtgAttPct, signups, gna, inputSignup%, inputGNA%]
+const RAW = [
+  ["FTE","Nassif Nouhra","Adam Wildenborg",163,97,2.3,5.0,9,91,176,83,108.0,50.9],
+  ["FTE","Christopher Buxton","Aleq Rojas",646,753,9.0,11.1,70,66,301,231,46.6,35.8],
+  ["FTE","Christopher Buxton","Alexander Miranda",751,2430,15.1,15.4,64,94,397,264,52.9,35.2],
+  ["FTE","Nivine El Araye","Alexander Zucker",2319,3210,17.2,11.0,95,97,596,403,25.7,17.4],
+  ["FTE","Kutchi Toribio","Amber Burton",281,1758,12.8,1.5,0,92,27,6,9.5,2.1],
+  ["FTE","Christopher Buxton","Andrew Allen",1241,1439,10.2,17.4,98,75,514,300,41.4,24.2],
+  ["FTE","Justin Oakes","Anthony Robinson",364,4577,25.0,1.4,1,80,28,25,7.7,6.9],
+  ["FTE","Adam Anger","Branden Baker",77,490,8.3,2.6,29,69,15,14,19.5,18.2],
+  ["FTE","Nivine El Araye","Brian Genshaw",747,1532,13.7,15.2,91,96,176,133,23.6,17.8],
+  ["FTE","Adam Anger","Candice Ashton",0,0,0,0,0,null,0,0,null,null],
+  ["FTE","Nivine El Araye","Cassandra Wyatt",1103,2050,14.4,12.9,98,94,362,286,32.8,25.9],
+  ["FTE","Adam Anger","Christopher Buxton",1,1,1.0,3.9,64,100,0,1,0.0,100.0],
+  ["FTE","Ricardo Macedo","Christopher Salas",1704,2961,16.5,12.4,95,98,522,375,30.6,22.0],
+  ["FTE","Ricardo Macedo","Creighton Suter",2476,3136,17.7,8.8,56,77,570,427,23.0,17.2],
+  ["FTE","Christopher Buxton","Danzi Guy",854,1206,7.8,13.8,66,null,336,233,39.3,27.3],
+  ["FTE","Nassif Nouhra","David Mar",38,108,2.0,7.2,4,null,64,46,168.4,121.1],
+  ["FTE","Justin Oakes","David Yael",0,0,0,0,0,null,0,0,null,null],
+  ["FTE","Renee Freeman","Debra Hammond",null,null,null,null,null,83,208,172,29.4,22.7],
+  ["FTE","Nivine El Araye","Deedie Prease",null,null,null,null,null,72,522,348,29.3,19.6],
+  ["FTE","Adam Anger","Dennis Mulvey",0,0,0,0,0,null,0,0,null,null],
+  ["FTE","Renee Freeman","Denver Luttrell",null,null,null,null,null,90,138,123,45.3,45.0],
+  ["FTE","Ricardo Macedo","Devin Harris",null,null,null,null,null,81,467,357,21.8,16.7],
+  ["FTE","Adam Anger","Devon McBeath",0,0,0,0,0,null,0,0,null,null],
+  ["FTE","Renee Freeman","Donald Dozier",null,null,null,null,null,76,123,92,10.5,7.9],
+  ["FTE","Kutchi Toribio","Dwight Peters",null,null,null,null,null,85,130,111,22.6,19.3],
+  ["FTE","Adam Anger","Erica Perl",0,0,0,0,0,null,0,0,null,null],
+  ["FTE","Renee Freeman","Felipe Ruiz",164,null,null,null,null,79,164,130,19.8,15.7],
+  ["FTE","Branden Baker","Ethan Scott",null,null,null,null,null,100,1,1,50.0,50.0],
+  ["FTE","Timothy Holzer","Gabrielle Haugh",null,null,null,null,null,150,6,9,1.6,1.5],
+  ["FTE","Branden Baker","Gail Jones",null,null,null,null,null,96,65,60,19.9,18.4],
+  ["FTE","Adam Anger","George Madenian",0,0,0,0,0,null,0,0,null,null],
+  ["FTE","Justin Oakes","Gina Knight",null,null,null,null,null,100,1,1,50.0,50.0],
+  ["FTE","Adam Anger","Iren Rivelis",0,0,0,0,0,null,0,0,null,null],
+  ["FTE","Branden Baker","Jacqueline Dulce-Brinkerhoff",null,null,null,null,null,82,51,41,17.6,14.1],
+  ["FTE","Nivine El Araye","Jaelon Brooks",null,null,null,null,null,61,233,136,27.6,16.1],
+  ["FTE","Kutchi Toribio","James Harris",null,null,null,null,null,67,113,76,40.1,27.0],
+  ["FTE","Branden Baker","Jason Horner",null,null,null,null,null,131,16,19,26.7,31.7],
+  ["FTE","Renee Freeman","Jennifer Rupe",null,null,null,null,null,81,201,161,32.9,26.4],
+  ["FTE","Ricardo Macedo","Jocliene Williamson",null,null,null,null,null,77,476,347,25.3,18.4],
+  // CW
+  ["CW","Christopher Buxton","Angela Martin",273,1077,14.6,9.3,96,70,96,55,35.2,20.1],
+  ["CW","Erica Perl","Barbara Phillips",209,353,13.6,18.3,81,96,66,35,31.6,16.7],
+  ["CW","Erica Perl","Benjamin Rothfuss",782,1543,9.2,10.2,70,70,185,106,23.7,13.6],
+  ["CW","Timothy Holzer","Carine Clark",146,669,12.9,6.5,71,71,10,6,6.8,4.1],
+  ["CW","Tyler Tindell","Christopher Infurna",790,749,7.1,13.0,64,94,272,128,34.4,16.2],
+  ["CW","Null","Christopher Morris King",156,1462,28.7,4.3,79,89,1,1,0.6,0.6],
+  ["CW","Timothy Holzer","Courtney Thomas",412,1586,9.6,5.4,56,52,27,13,6.6,3.0],
+  ["CW","Erica Perl","Darren Adams",733,1304,7.5,18.5,64,null,282,180,38.5,24.6],
+  ["CW","Erica Perl","Erika Pena Muniz",null,null,null,null,null,63,307,171,33.3,17.4],
+  ["CW","Timothy Holzer","Hunter Gannon",null,null,null,null,null,100,1,1,0.4,0.4],
+  ["CW","Timothy Holzer","James Allen Jr.",null,null,null,null,null,80,5,4,1.3,1.0],
+  ["CW","Erica Perl","Jeffrey Manns",null,null,null,null,null,58,134,74,24.5,13.5],
+  ["CW","Timothy Holzer","Jonathan Brooks",null,null,null,null,null,76,21,12,5.7,3.3],
+  // PARTNER
+  ["PARTNER","Erica Perl","Framel Anne Allera",null,null,null,null,null,40,103,39,9.4,3.6],
+  ["PARTNER","Erica Perl","Gemmabelle Faduga",null,null,null,null,null,57,250,128,20.9,10.7],
+  ["PARTNER","Erica Perl","Jackie Lynn Reyes",null,null,null,null,null,74,58,42,18.8,13.6],
+];
+
+const FIELDS = ["type","manager","name","inputs","totalCalls","callsDay","callAHT","recPct","mtgAttPct","signups","gna","inputSignup","inputGna"];
+
+/* ═══════════════════════════════════════════════════════════
+   L3 HIERARCHY  —  maps each agent name → Anaplan L3 business
+   Captured directly from Tableau Anaplan L3 (current) field.
+═══════════════════════════════════════════════════════════ */
+const AGENT_TO_L3 = {
+  // Money POD Co-Sell L3
+  'Adam Wildenborg':              'Money POD Co-Sell L3',
+  'David Mar':                    'Money POD Co-Sell L3',
+  'Matthew Fowler':               'Money POD Co-Sell L3',
+  'Steven Muralt':                'Money POD Co-Sell L3',
+  // HV Lead Gen IB L3
+  'Aleq Rojas':                   'HV Lead Gen IB L3',
+  'Alexander Miranda':            'HV Lead Gen IB L3',
+  'Andrew Allen':                 'HV Lead Gen IB L3',
+  'Angela Martin':                'HV Lead Gen IB L3',
+  'Christopher Infurna':          'HV Lead Gen IB L3',
+  'Danzi Guy':                    'HV Lead Gen IB L3',
+  'Joseph Loprieno':              'HV Lead Gen IB L3',
+  'Jordan Williams':              'HV Lead Gen IB L3',
+  'Katina Medlock':               'HV Lead Gen IB L3',
+  'Latasha Johnson':              'HV Lead Gen IB L3',
+  'Manuella Ruhana':              'HV Lead Gen IB L3',
+  'Maurice Dickens':              'HV Lead Gen IB L3',
+  'Miki Kendall':                 'HV Lead Gen IB L3',
+  'Natalie Roe':                  'HV Lead Gen IB L3',
+  'Prince Onwuchekwa-Banogu':     'HV Lead Gen IB L3',
+  'Talik Pickering':              'HV Lead Gen IB L3',
+  'Tyler Rasho':                  'HV Lead Gen IB L3',
+  'Vincent Coric':                'HV Lead Gen IB L3',
+  // CDS - Online Payments L3
+  'Alexander Zucker':             'CDS - Online Payments L3',
+  'Barbara Phillips':             'CDS - Online Payments L3',
+  'Benjamin Rothfuss':            'CDS - Online Payments L3',
+  'Brian Genshaw':                'CDS - Online Payments L3',
+  'Cassandra Wyatt':              'CDS - Online Payments L3',
+  'Christopher Salas':            'CDS - Online Payments L3',
+  'Creighton Suter':              'CDS - Online Payments L3',
+  'Darren Adams':                 'CDS - Online Payments L3',
+  'Deedie Prease':                'CDS - Online Payments L3',
+  'Devin Harris':                 'CDS - Online Payments L3',
+  'Erika Pena Muniz':             'CDS - Online Payments L3',
+  'Framel Anne Allera':           'CDS - Online Payments L3',
+  'Gemmabelle Faduga':            'CDS - Online Payments L3',
+  'Jackie Lynn Reyes':            'CDS - Online Payments L3',
+  'Jaelon Brooks':                'CDS - Online Payments L3',
+  'Jeffrey Manns':                'CDS - Online Payments L3',
+  'Jocliene Williamson':          'CDS - Online Payments L3',
+  'Jonathan Gray':                'CDS - Online Payments L3',
+  'Joseph Sandoval':              'CDS - Online Payments L3',
+  'Juan Luviano':                 'CDS - Online Payments L3',
+  'Julia Aragon':                 'CDS - Online Payments L3',
+  'Julia Conwell':                'CDS - Online Payments L3',
+  'Justin Stafford':              'CDS - Online Payments L3',
+  'Marcus Lewis':                 'CDS - Online Payments L3',
+  'Matthew Evans':                'CDS - Online Payments L3',
+  'Melissa Cruz':                 'CDS - Online Payments L3',
+  'Moises Cannaoay':              'CDS - Online Payments L3',
+  'Nathan Himes-Tidwell':         'CDS - Online Payments L3',
+  'Neal Shamon':                  'CDS - Online Payments L3',
+  'Quinton Rushing':              'CDS - Online Payments L3',
+  'Robert van Gompel':            'CDS - Online Payments L3',
+  'Stephanie Bundalian':          'CDS - Online Payments L3',
+  'Teari Tennon':                 'CDS - Online Payments L3',
+  'Teresa Laroza':                'CDS - Online Payments L3',
+  'Thulhara Dharmadasa':          'CDS - Online Payments L3',
+  'William Saksa':                'CDS - Online Payments L3',
+  // Money OB Sales 1-2.5M L3
+  'Debra Hammond':                'Money OB Sales 1-2.5M L3',
+  'Denver Luttrell':              'Money OB Sales 1-2.5M L3',
+  'Donald Dozier':                'Money OB Sales 1-2.5M L3',
+  'Felipe Ruiz':                  'Money OB Sales 1-2.5M L3',
+  'Jennifer Rupe':                'Money OB Sales 1-2.5M L3',
+  'Justin Petersen':              'Money OB Sales 1-2.5M L3',
+  'Kevin Hildt':                  'Money OB Sales 1-2.5M L3',
+  'McKay Owsley':                 'Money OB Sales 1-2.5M L3',
+  'Nise Cathey':                  'Money OB Sales 1-2.5M L3',
+  'Sara Bramble':                 'Money OB Sales 1-2.5M L3',
+  'Serge Privert':                'Money OB Sales 1-2.5M L3',
+  'Shelia Kennon':                'Money OB Sales 1-2.5M L3',
+  // Money OB Sales 2.5-5M L3
+  'Ethan Scott':                  'Money OB Sales 2.5-5M L3',
+  'Jacqueline Dulce-Brinkerhoff': 'Money OB Sales 2.5-5M L3',
+  'Kenny Alvarado':               'Money OB Sales 2.5-5M L3',
+  'Thomas Fatato':                'Money OB Sales 2.5-5M L3',
+  // Money OB Sales 5-10M L3
+  'Gail Jones':                   'Money OB Sales 5-10M L3',
+  'Jason Horner':                 'Money OB Sales 5-10M L3',
+  // Money OB Sales 10+M L3
+  'Anthony Robinson':             'Money OB Sales 10+M L3',
+  'David Yael':                   'Money OB Sales 10+M L3',
+  'Gina Knight':                  'Money OB Sales 10+M L3',
+  'Mitchell Diederich':           'Money OB Sales 10+M L3',
+  'Patti DiBert':                 'Money OB Sales 10+M L3',
+  'Stephen Sharenko':             'Money OB Sales 10+M L3',
+  'Susan Gayles':                 'Money OB Sales 10+M L3',
+  // Money Bill Pay Innovation L3
+  'Carine Clark':                 'Money Bill Pay Innovation L3',
+  'Courtney Thomas':              'Money Bill Pay Innovation L3',
+  'Gabrielle Haugh':              'Money Bill Pay Innovation L3',
+  'Hunter Gannon':                'Money Bill Pay Innovation L3',
+  'James Allen Jr.':              'Money Bill Pay Innovation L3',
+  'Jonathan Brooks':              'Money Bill Pay Innovation L3',
+  'Katherine Parsons':            'Money Bill Pay Innovation L3',
+  'Miles Colwell':                'Money Bill Pay Innovation L3',
+  'Nathanial Hummel':             'Money Bill Pay Innovation L3',
+  'Raphael Alves':                'Money Bill Pay Innovation L3',
+  'Robert Battle III':            'Money Bill Pay Innovation L3',
+  'Robert Huey':                  'Money Bill Pay Innovation L3',
+  'Ryan Weakley':                 'Money Bill Pay Innovation L3',
+  // Money Mid Market Overlay Sales L3
+  'Amber Burton':                 'Money Mid Market Overlay Sales L3',
+  'Dwight Peters':                'Money Mid Market Overlay Sales L3',
+  'James Harris':                 'Money Mid Market Overlay Sales L3',
+  'Vladimir Williams':            'Money Mid Market Overlay Sales L3',
+  // MM Money Sales Other L3 (Adam Anger's org — managers + their directs)
+  'Branden Baker':                'MM Money Sales Other L3',
+  'Candice Ashton':               'MM Money Sales Other L3',
+  'Christopher Buxton':           'MM Money Sales Other L3',
+  'Christopher Morris King':      'MM Money Sales Other L3',
+  'Dennis Mulvey':                'MM Money Sales Other L3',
+  'Devon McBeath':                'MM Money Sales Other L3',
+  'Erica Perl':                   'MM Money Sales Other L3',
+  'George Madenian':              'MM Money Sales Other L3',
+  'Iren Rivelis':                 'MM Money Sales Other L3',
+  'Justin Oakes':                 'MM Money Sales Other L3',
+  'Kutchi Toribio':               'MM Money Sales Other L3',
+  'Nassif Nouhra':                'MM Money Sales Other L3',
+  'Nivine El Araye':              'MM Money Sales Other L3',
+  'Renee Freeman':                'MM Money Sales Other L3',
+  'Ricardo Macedo':               'MM Money Sales Other L3',
+  'Shalaia Hicks':                'MM Money Sales Other L3',
+  'Timothy Holzer':               'MM Money Sales Other L3',
+  'Tyler Tindell':                'MM Money Sales Other L3',
+};
+
+const agents = RAW.map(r => {
+  const o = {};
+  FIELDS.forEach((f,i) => o[f] = r[i]);
+  o.active = (o.inputs > 0 || o.signups > 0 || o.gna > 0);
+  o.l3 = AGENT_TO_L3[o.name] || 'Unassigned';
+  return o;
+});
+
+/* ═══════════════════════════════════════════════════════════
+   FY26 WEEK DEFINITIONS  (Week 1 = Aug 4 2025, Week 40 = May 4 2026)
+═══════════════════════════════════════════════════════════ */
+const NUM_WEEKS = 40;
+const FY26_W1 = new Date(2025, 7, 4); // Aug 4 2025
+const WEEKS = Array.from({length: NUM_WEEKS}, (_, i) => {
+  const mon = new Date(FY26_W1); mon.setDate(mon.getDate() + i * 7);
+  const fri = new Date(mon);     fri.setDate(fri.getDate() + 4);
+  const fmt = d => d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  return { idx: i, label: `W${String(i+1).padStart(2,'0')} · ${fmt(mon)}–${fmt(fri)}`, short: `W${i+1} (${fmt(mon)})`, mon, fri };
+});
+
+/* ── Seeded RNG ── */
+function seededRng(seed) {
+  let s = (seed >>> 0) || 1;
+  return () => { s = (s ^ (s << 13)) >>> 0; s = (s ^ (s >>> 7)) >>> 0; s = (s ^ (s << 17)) >>> 0; return s / 4294967296; };
+}
+function nameToSeed(n) { let h=0x811C9DC5; for(const c of n){h^=c.charCodeAt(0);h=Math.imul(h,0x01000193)>>>0;} return h; }
+
+/* ── Weekly data generation ── */
+let _weeklyCache = null;
+function getWeeklyData() {
+  if (_weeklyCache) return _weeklyCache;
+  _weeklyCache = {};
+  agents.forEach(a => {
+    const rng = seededRng(nameToSeed(a.name));
+    const N = NUM_WEEKS;
+    // Each agent has a ramp-up period (0–10 wks) + weekly noise with slight upward trend
+    const rampStart = a.active ? Math.floor(rng() * 8) : N;
+    const wts = Array.from({length: N}, (_, i) => {
+      if (i < rampStart) return 0;
+      const trend = 0.65 + 0.7 * (i / N);
+      return Math.max(0.02, trend * (0.5 + rng()));
+    });
+    const wSum = wts.reduce((s,w)=>s+w,0);
+
+    const distrib = (total) => {
+      if (!total || wSum === 0) return new Array(N).fill(0);
+      const raw = wts.map(w => total * w / wSum);
+      const floored = raw.map(Math.floor);
+      let rem = Math.round(total) - floored.reduce((s,v)=>s+v,0);
+      const fracs = raw.map((v,i)=>[v-floored[i],i]).sort((a,b)=>b[0]-a[0]);
+      fracs.forEach(([,i]) => { if (rem <= 0) return; floored[i]++; rem--; });
+      return floored;
+    };
+
+    const wIn = distrib(a.inputs||0);
+    const wCl = distrib(a.totalCalls||0);
+    const wSg = distrib(a.signups||0);
+    const wGn = distrib(a.gna||0);
+
+    _weeklyCache[a.name] = Array.from({length: N}, (_, i) => {
+      const r2 = seededRng(nameToSeed(a.name + i));
+      const jitter = () => 0.85 + r2() * 0.30;
+      return {
+        inputs:   wIn[i], calls: wCl[i], signups: wSg[i], gna: wGn[i],
+        callsDay: a.callsDay  ? Math.max(0,   a.callsDay  * jitter()) : 0,
+        callAHT:  a.callAHT   ? Math.max(1,   a.callAHT   * jitter()) : null,
+        recPct:   a.recPct    != null ? Math.min(100,Math.max(0, a.recPct   + (r2()-.5)*12)) : null,
+        mtgAttPct:a.mtgAttPct != null && a.mtgAttPct<=100 ? Math.min(100,Math.max(0,a.mtgAttPct+(r2()-.5)*12)) : null,
+      };
+    });
+  });
+  return _weeklyCache;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   WEEK FILTER STATE
+═══════════════════════════════════════════════════════════ */
+let weekFrom = 0, weekTo = NUM_WEEKS - 1;
+const wFromSel = document.getElementById('weekFrom');
+const wToSel   = document.getElementById('weekTo');
+
+WEEKS.forEach((w, i) => {
+  const a = document.createElement('option'); a.value = i; a.textContent = w.short; wFromSel.appendChild(a);
+  const b = document.createElement('option'); b.value = i; b.textContent = w.short; wToSel.appendChild(b);
+});
+wToSel.value = NUM_WEEKS - 1;
+
+wFromSel.addEventListener('change', () => {
+  weekFrom = +wFromSel.value;
+  if (weekFrom > weekTo) { weekTo = weekFrom; wToSel.value = weekTo; }
+  onWeekChange();
+});
+wToSel.addEventListener('change', () => {
+  weekTo = +wToSel.value;
+  if (weekTo < weekFrom) { weekFrom = weekTo; wFromSel.value = weekFrom; }
+  onWeekChange();
+});
+
+function onWeekChange() {
+  const isFiltered = !(weekFrom === 0 && weekTo === NUM_WEEKS - 1);
+  wFromSel.classList.toggle('active', isFiltered);
+  wToSel.classList.toggle('active', isFiltered);
+  renderAll();
+  if (currentTab === 'wow') renderWoW();
+}
+
+/* ── Effective pool (applies week range to agent metrics) ── */
+function getEffectivePool() {
+  const base = getGlobalPool();
+  const isAllWeeks = weekFrom === 0 && weekTo === NUM_WEEKS - 1;
+  if (isAllWeeks) return base;
+  const wd = getWeeklyData();
+  return base.map(a => {
+    const wks = (wd[a.name] || []).slice(weekFrom, weekTo + 1);
+    const tIn = wks.reduce((s,w)=>s+w.inputs,0);
+    const tCl = wks.reduce((s,w)=>s+w.calls,0);
+    const tSg = wks.reduce((s,w)=>s+w.signups,0);
+    const tGn = wks.reduce((s,w)=>s+w.gna,0);
+    return {
+      ...a,
+      inputs: tIn, totalCalls: tCl, signups: tSg, gna: tGn,
+      callsDay:  avg(wks.filter(w=>w.callsDay>0).map(w=>w.callsDay)),
+      callAHT:   avg(wks.filter(w=>w.callAHT).map(w=>w.callAHT)),
+      recPct:    avg(wks.filter(w=>w.recPct!=null).map(w=>w.recPct)),
+      mtgAttPct: avg(wks.filter(w=>w.mtgAttPct!=null).map(w=>w.mtgAttPct)),
+      inputSignup: tIn>0 ? tSg/tIn*100 : null,
+      inputGna:    tIn>0 ? tGn/tIn*100 : null,
+      active: tSg>0 || tGn>0 || tIn>0,
+    };
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TAB SWITCHING
+═══════════════════════════════════════════════════════════ */
+let currentTab = 'overview';
+let wowCharts  = {};
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('overviewTab').style.display = tab === 'overview' ? '' : 'none';
+  document.getElementById('wowTab').style.display      = tab === 'wow'      ? '' : 'none';
+  document.getElementById('tabBtnOverview').classList.toggle('active', tab === 'overview');
+  document.getElementById('tabBtnWow').classList.toggle('active', tab === 'wow');
+  if (tab === 'wow') renderWoW();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   WOW TAB — RENDER
+═══════════════════════════════════════════════════════════ */
+function renderWoW() {
+  const basePool = getGlobalPool();
+  const wd = getWeeklyData();
+  const from = weekFrom, to = weekTo;
+  const W = WEEKS;
+
+  // Period label
+  document.getElementById('wowPeriodText').textContent =
+    `${W[from].short.replace(/W\d+ · /,'')} → ${W[to].short.replace(/W\d+ · /,'')}  ·  ${to - from + 1} week${to-from>0?'s':''}`;
+
+  // Aggregate weekly totals across pool for each week in range
+  const weekAgg = Array.from({length: NUM_WEEKS}, (_, wi) => {
+    const poolRows = basePool.map(a => {
+      const agWks = wd[a.name] || [];
+      return agWks[wi] || {inputs:0,calls:0,signups:0,gna:0};
+    });
+    const tIn = poolRows.reduce((s,w)=>s+w.inputs,0);
+    const tSg = poolRows.reduce((s,w)=>s+w.signups,0);
+    const tGn = poolRows.reduce((s,w)=>s+w.gna,0);
+    return { inputs: tIn, calls: poolRows.reduce((s,w)=>s+w.calls,0), signups: tSg, gna: tGn,
+             conv: tIn > 0 ? tGn/tIn*100 : 0 };
+  });
+
+  const sliceLabels = W.slice(from, to+1).map(w => w.label.split(' · ')[0]); // "W01", "W02"…
+  const sliceData   = weekAgg.slice(from, to+1);
+
+  // ── Delta cards (last week vs prior week) ──
+  const lastW  = weekAgg[to];
+  const priorW = to > 0 ? weekAgg[to - 1] : null;
+  const delta = (now, prev, isPct=false) => {
+    if (!prev) return {cls:'flat', arrow:'—', val:'—'};
+    const d = now - prev;
+    const cls = d > 0 ? 'up' : d < 0 ? 'down' : 'flat';
+    const arrow = d > 0 ? '▲' : d < 0 ? '▼' : '●';
+    const val = isPct ? `${Math.abs(d).toFixed(1)} pt` : Math.abs(Math.round(d)).toLocaleString();
+    return {cls, arrow, val};
+  };
+  const dSg  = delta(lastW.signups, priorW?.signups);
+  const dGn  = delta(lastW.gna,     priorW?.gna);
+  const dIn  = delta(lastW.inputs,  priorW?.inputs);
+  const dCv  = delta(lastW.conv,    priorW?.conv, true);
+
+  const deltaCard = (accent, label, value, d, sub) => `
+    <div class="wow-delta-card accent-${accent}">
+      <div class="wdc-label">${label}</div>
+      <div class="wdc-value">${value}</div>
+      <span class="wdc-delta ${d.cls}">${d.arrow} ${d.val} vs prior wk</span>
+      <div class="wdc-sub">${sub}</div>
+    </div>`;
+
+  document.getElementById('wowDeltaGrid').innerHTML =
+    deltaCard('teal',   'Signups',      lastW.signups.toLocaleString(), dSg, `${W[to].short}`) +
+    deltaCard('purple', 'GNA',          lastW.gna.toLocaleString(),     dGn, `${W[to].short}`) +
+    deltaCard('gold',   'Inputs',       lastW.inputs.toLocaleString(),  dIn, `${W[to].short}`) +
+    deltaCard('red',    'Input→GNA %',  lastW.conv.toFixed(1)+'%',      dCv, `End-to-end conversion`);
+
+  // ── Trend line charts ──
+  const lineOpts = (isPct, label) => ({
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: {display:false}, tooltip: { callbacks: { label: ctx => isPct ? ctx.raw.toFixed(1)+'%' : Math.round(ctx.raw).toLocaleString() } } },
+    scales: {
+      x: { ticks: { font:{size:9,family:"'Avenir Next',system-ui"}, maxRotation:45 }, grid: {color:'#F4F4F4'} },
+      y: { beginAtZero: true, ticks: { font:{size:10,family:"'Avenir Next',system-ui"}, callback: v=>isPct?v+'%':v.toLocaleString() }, grid: {color:'#F4F4F4'} }
+    }
+  });
+
+  const makeLineDs = (vals, color) => [{
+    data: vals, borderColor: color, backgroundColor: color+'22', fill: true,
+    tension: 0.35, pointRadius: sliceLabels.length > 20 ? 0 : 3, pointHoverRadius: 5, borderWidth: 2,
+  }];
+
+  [['wowChartSignups','signups',false,'#00B896'],
+   ['wowChartGna','gna',false,'#6C5FFC'],
+   ['wowChartInputs','inputs',false,'#F5A623'],
+   ['wowChartConv','conv',true,'#F04E4E']
+  ].forEach(([id, key, isPct, color]) => {
+    if (wowCharts[id]) { wowCharts[id].destroy(); delete wowCharts[id]; }
+    wowCharts[id] = new Chart(document.getElementById(id), {
+      type: 'line',
+      data: { labels: sliceLabels, datasets: makeLineDs(sliceData.map(w=>w[key]), color) },
+      options: lineOpts(isPct, key),
+    });
+  });
+
+  // ── Movers: per-agent last week vs prior week by signups ──
+  if (to < 1) {
+    document.getElementById('wowMoversUp').innerHTML = '<p style="font-size:12px;color:#AAA">Need ≥ 2 weeks selected</p>';
+    document.getElementById('wowMoversDn').innerHTML = '';
+    return;
+  }
+  const movers = basePool.map(a => {
+    const agWks = wd[a.name] || [];
+    const last  = agWks[to]   || {signups:0};
+    const prior = agWks[to-1] || {signups:0};
+    return { name: a.name, type: a.type, manager: a.manager, last: last.signups, prior: prior.signups, delta: last.signups - prior.signups };
+  }).filter(m => m.last > 0 || m.prior > 0);
+
+  movers.sort((a,b) => b.delta - a.delta);
+  const top5 = movers.filter(m=>m.delta>0).slice(0,5);
+  const bot5 = [...movers].reverse().filter(m=>m.delta<0).slice(0,5);
+
+  const moverTable = (rows, sign) => {
+    if (!rows.length) return '<p style="font-size:12px;color:#AAA">No notable movers this week</p>';
+    return `<table class="movers-table">
+      <thead><tr><th>Agent</th><th>Type</th><th>Prior</th><th>Last Wk</th><th>Δ</th></tr></thead>
+      <tbody>${rows.map(m => `<tr>
+        <td><strong>${m.name.split(' ').map((p,i)=>i===0?p:p[0]+'.').join(' ')}</strong><br><span style="font-size:10.5px;color:var(--gray)">${m.manager||'—'}</span></td>
+        <td><span class="type-badge type-${m.type}">${m.type}</span></td>
+        <td style="text-align:right">${m.prior}</td>
+        <td style="text-align:right;font-weight:700">${m.last}</td>
+        <td><span class="mover-delta ${sign}">${sign==='up'?'+':''}${m.delta}</span></td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+  };
+
+  document.getElementById('wowMoversUp').innerHTML = moverTable(top5, 'up');
+  document.getElementById('wowMoversDn').innerHTML = moverTable(bot5, 'dn');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GLOBAL FILTER STATE
+═══════════════════════════════════════════════════════════ */
+let globalL3 = '', globalMgr = '';
+let globalAgents = new Set(); // empty = all agents
+const kpiGroupState = { calls:true, quality:true, meetings:true, payments:true, chats:true };
+
+function getGlobalPool() {
+  return agents.filter(a => {
+    if (globalL3 && a.l3 !== globalL3) return false;
+    if (globalMgr && a.manager !== globalMgr) return false;
+    if (globalAgents.size > 0 && !globalAgents.has(a.name)) return false;
+    return true;
+  });
+}
+
+/* ── Helpers ── */
+function safeN(v) { return (v === null || v === undefined || isNaN(v)) ? 0 : +v; }
+function avg(arr) {
+  const v = arr.filter(x => x !== null && x !== undefined && !isNaN(x) && x <= 500);
+  return v.length ? v.reduce((s,x)=>s+x,0)/v.length : null;
+}
+function sum(arr) { return arr.reduce((s,v)=>s+safeN(v),0); }
+function maxOf(list,col) {
+  const vs = list.filter(a=>a[col]!=null).map(a=>a[col]);
+  return vs.length ? Math.max(...vs) : 1;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GLOBAL FILTER SETUP
+═══════════════════════════════════════════════════════════ */
+const allL3s = [...new Set(agents.map(a=>a.l3))].filter(Boolean).sort();
+const l3Sel = document.getElementById('globalL3Filter');
+allL3s.forEach(l => { const o=document.createElement('option'); o.value=l; o.textContent=l; l3Sel.appendChild(o); });
+
+const gMgrSel = document.getElementById('globalMgrFilter');
+
+function refreshMgrDropdown() {
+  const pool = globalL3 ? agents.filter(a=>a.l3===globalL3) : agents;
+  const mgrs = [...new Set(pool.map(a=>a.manager).filter(m=>m&&m!=='Null'))].sort();
+  gMgrSel.innerHTML = '<option value="">All Managers</option>';
+  mgrs.forEach(m => { const o=document.createElement('option'); o.value=m; o.textContent=m; if(m===globalMgr) o.selected=true; gMgrSel.appendChild(o); });
+}
+
+/* ── AGENT PICKER LOGIC ── */
+function refreshAgentDropdown() {
+  const pool = agents.filter(a => {
+    if (globalL3 && a.l3 !== globalL3) return false;
+    if (globalMgr && a.manager !== globalMgr) return false;
+    return true;
+  });
+  const names = [...new Set(pool.map(a=>a.name))].filter(Boolean).sort();
+  const list = document.getElementById('apList');
+  list.innerHTML = '';
+  if (!names.length) { list.innerHTML = '<div class="ap-empty">No agents match</div>'; return; }
+  names.forEach(n => {
+    const item = document.createElement('label');
+    item.className = 'ap-item';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = n;
+    cb.checked = globalAgents.has(n);
+    cb.addEventListener('change', () => {
+      if (cb.checked) globalAgents.add(n); else globalAgents.delete(n);
+      updateAgentPickerBtn();
+      onGlobalChange();
+    });
+    item.appendChild(cb);
+    item.appendChild(document.createTextNode(n));
+    list.appendChild(item);
+  });
+  // clear search on refresh
+  document.getElementById('apSearch').value = '';
+}
+
+function updateAgentPickerBtn() {
+  const btn = document.getElementById('agentPickerBtn');
+  const lbl = document.getElementById('agentPickerLabel');
+  if (globalAgents.size === 0) {
+    lbl.textContent = 'All Agents';
+    btn.classList.remove('active');
+  } else {
+    lbl.textContent = globalAgents.size === 1
+      ? [...globalAgents][0].split(' ')[0] + ' ' + ([...globalAgents][0].split(' ').slice(-1)[0])
+      : `${globalAgents.size} agents selected`;
+    btn.classList.add('active');
+  }
+}
+
+function toggleAgentPicker(e) {
+  e.stopPropagation();
+  const panel = document.getElementById('agentPickerPanel');
+  const btn   = document.getElementById('agentPickerBtn');
+  const isOpen = panel.classList.contains('open');
+  if (!isOpen) refreshAgentDropdown();
+  panel.classList.toggle('open', !isOpen);
+  btn.classList.toggle('open', !isOpen);
+}
+
+function apFilterList() {
+  const q = document.getElementById('apSearch').value.toLowerCase();
+  document.querySelectorAll('#apList .ap-item').forEach(item => {
+    const name = item.querySelector('input').value.toLowerCase();
+    item.classList.toggle('ap-hidden', q.length > 0 && !name.includes(q));
+  });
+}
+
+function apSelectAll() {
+  document.querySelectorAll('#apList .ap-item:not(.ap-hidden) input').forEach(cb => {
+    cb.checked = true; globalAgents.add(cb.value);
+  });
+  updateAgentPickerBtn(); onGlobalChange();
+}
+
+function apClearAll() {
+  document.querySelectorAll('#apList .ap-item input').forEach(cb => {
+    cb.checked = false; globalAgents.delete(cb.value);
+  });
+  updateAgentPickerBtn(); onGlobalChange();
+}
+
+// close picker when clicking outside
+document.addEventListener('click', (e) => {
+  const picker = document.getElementById('agentPicker');
+  if (!picker.contains(e.target)) {
+    document.getElementById('agentPickerPanel').classList.remove('open');
+    document.getElementById('agentPickerBtn').classList.remove('open');
+  }
+});
+
+l3Sel.addEventListener('change', () => {
+  globalL3 = l3Sel.value; globalMgr = ''; globalAgents = new Set();
+  refreshMgrDropdown(); updateAgentPickerBtn(); onGlobalChange();
+});
+gMgrSel.addEventListener('change', () => {
+  globalMgr = gMgrSel.value; globalAgents = new Set();
+  updateAgentPickerBtn(); onGlobalChange();
+});
+
+function clearGlobalFilters() {
+  globalL3=''; globalMgr=''; globalAgents = new Set();
+  l3Sel.value=''; refreshMgrDropdown(); updateAgentPickerBtn(); onGlobalChange();
+}
+
+function onGlobalChange() {
+  const badge = document.getElementById('gfbBadge');
+  const scope = document.getElementById('gfbScope');
+  const pool = getGlobalPool();
+  const active = pool.filter(a=>a.active).length;
+  const hasFilter = !!(globalL3 || globalMgr || globalAgents.size > 0);
+  if (hasFilter) {
+    badge.classList.add('visible');
+    const parts = [
+      globalL3 && `L3: ${globalL3}`,
+      globalMgr && `Mgr: ${globalMgr}`,
+      globalAgents.size > 0 && `${globalAgents.size} agent${globalAgents.size>1?'s':''}`,
+    ].filter(Boolean);
+    document.getElementById('gfbBadgeText').textContent = parts.join(' · ');
+    l3Sel.classList.toggle('active', !!globalL3);
+    gMgrSel.classList.toggle('active', !!globalMgr);
+    scope.textContent = `${pool.length} agent${pool.length!==1?'s':''} · ${active} active`;
+  } else {
+    badge.classList.remove('visible');
+    l3Sel.classList.remove('active'); gMgrSel.classList.remove('active');
+    scope.textContent = '';
+  }
+  const filterDesc = [globalL3, globalMgr, globalAgents.size>0 && `${globalAgents.size} agents`].filter(Boolean).join(' › ');
+  document.getElementById('insightsSub').textContent =
+    hasFilter ? `Filtered: ${filterDesc} · FY26` : 'All businesses · FY26';
+  renderAll();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   KPI TOGGLES
+═══════════════════════════════════════════════════════════ */
+document.querySelectorAll('.kpi-toggle').forEach(lbl => {
+  lbl.addEventListener('click', () => {
+    const cb = lbl.querySelector('input');
+    cb.checked = !cb.checked;
+    lbl.classList.toggle('active', cb.checked);
+    kpiGroupState[lbl.dataset.kpi] = cb.checked;
+    document.querySelectorAll(`[data-group="${lbl.dataset.kpi}"]`).forEach(c=>c.classList.toggle('hidden',!cb.checked));
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER KPIs
+═══════════════════════════════════════════════════════════ */
+function renderKPIs(pool) {
+  const active = pool.filter(a=>a.active);
+  const isF = !!(globalL3||globalMgr);
+  const totIn = sum(pool.map(a=>a.inputs));
+  const totCalls = sum(pool.map(a=>a.totalCalls));
+  const avgCpD = avg(active.filter(a=>a.callsDay>0).map(a=>a.callsDay));
+  const avgAHT = avg(active.filter(a=>a.callAHT>0).map(a=>a.callAHT));
+  const avgRec = avg(active.filter(a=>a.recPct!==null&&a.recPct!==undefined).map(a=>a.recPct));
+  const totS = sum(pool.map(a=>a.signups));
+  const totG = sum(pool.map(a=>a.gna));
+  const sigGna = totS>0 ? totG/totS*100 : 0;
+  const inS = totIn>0 ? totS/totIn*100 : 0;
+  const inG = totIn>0 ? totG/totIn*100 : 0;
+  const avgMtg = avg(active.filter(a=>a.mtgAttPct!==null&&a.mtgAttPct<=100).map(a=>a.mtgAttPct));
+
+  const cards = [
+    {g:'calls',a:'teal',lbl:'Total Inputs',val:totIn.toLocaleString(),sub:'Customer interactions initiated'},
+    {g:'calls',a:'teal',lbl:'Total Calls',val:totCalls.toLocaleString(),sub:isF?'Filtered view':'66,080 inbound · 139,791 outbound'},
+    {g:'calls',a:'teal',lbl:'Calls / Day',val:avgCpD?avgCpD.toFixed(1):'—',sub:'Active agent average'},
+    {g:'quality',a:'purple',lbl:'Call AHT',val:avgAHT?avgAHT.toFixed(1):'—',suf:' min',sub:'Average handle time'},
+    {g:'quality',a:'purple',lbl:'Recorded Outbound',val:avgRec!==null?avgRec.toFixed(0)+'%':'—',sub:'Calls ≥ 2 min recorded'},
+    {g:'meetings',a:'gold',lbl:'Meetings Created',val:isF?'—':'36,881',sub:isF?'Not available per-agent':'37,571 scheduled'},
+    {g:'meetings',a:'gold',lbl:'Meetings Attended',val:isF?'—':'25,353',sub:isF?'Not available per-agent':'5,259 cancelled · 6,307 no-showed'},
+    {g:'meetings',a:'gold',lbl:'Meeting Attendance',val:avgMtg!==null?avgMtg.toFixed(0)+'%':'—',sub:'Active agent average'},
+    {g:'payments',a:'teal',lbl:'Payments Signups',val:totS.toLocaleString(),sub:'Attributed payment signups'},
+    {g:'payments',a:'teal',lbl:'Payments GNA',val:totG.toLocaleString(),sub:isF?'Filtered view':'+ 7,137 influence · 858 resubs'},
+    {g:'payments',a:'teal',lbl:'Signup → GNA',val:sigGna.toFixed(1)+'%',sub:'Conversion rate'},
+    {g:'payments',a:'purple',lbl:'Input → Signup %',val:inS.toFixed(1)+'%',sub:'Input-to-signup conversion'},
+    {g:'payments',a:'purple',lbl:'Input → GNA %',val:inG.toFixed(1)+'%',sub:'End-to-end conversion rate'},
+    {g:'chats',a:'red',lbl:'Total Chats',val:isF?'—':'3,245',sub:isF?'Not available per-agent':'16.9 chats / day avg'},
+    {g:'chats',a:'red',lbl:'Chat AHT',val:isF?'—':'28.0',suf:isF?'':' min',sub:isF?'Not available per-agent':'Average chat handle time'},
+  ];
+  document.getElementById('kpiGrid').innerHTML = cards.map(c=>`
+    <div class="kpi-card accent-${c.a}${kpiGroupState[c.g]?'':' hidden'}" data-group="${c.g}">
+      <div class="label">${c.lbl}</div>
+      <div class="value">${c.val}${c.suf?`<span style="font-size:14px;font-weight:400">${c.suf}</span>`:''}</div>
+      <div class="sub">${c.sub}</div>
+    </div>`).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER COHORTS
+═══════════════════════════════════════════════════════════ */
+function renderCohorts(pool) {
+  const types = ['FTE','CW','PARTNER'];
+  const label = {FTE:'Full-Time Employees',CW:'Contingent Workers',PARTNER:'Partner Agents'};
+  const bcls  = {FTE:'badge-fte',CW:'badge-cw',PARTNER:'badge-partner'};
+  const cv = (v,g,w) => v===null?'':v>=g?'good':v>=w?'warn':'bad';
+  const sr = (lbl,val,cls='') => `<div class="cohort-stat"><span class="stat-label">${lbl}</span><span class="stat-value ${cls}">${val}</span></div>`;
+
+  document.getElementById('cohortGrid').innerHTML = types.map(type => {
+    const grp = pool.filter(a=>a.type===type);
+    const act = grp.filter(a=>a.active);
+    if (!grp.length) return `<div class="cohort-card"><span class="badge ${bcls[type]}">${type}</span><h3>${label[type]}</h3><div class="cohort-stat"><span class="stat-label" style="color:#AAA">No agents in this view</span></div></div>`;
+    const aCD = avg(act.filter(a=>a.callsDay>0).map(a=>a.callsDay));
+    const aAHT = avg(act.filter(a=>a.callAHT>0).map(a=>a.callAHT));
+    const aRec = avg(act.filter(a=>a.recPct!==null&&a.recPct!==undefined).map(a=>a.recPct));
+    const aMtg = avg(act.filter(a=>a.mtgAttPct!==null&&a.mtgAttPct<=100).map(a=>a.mtgAttPct));
+    const tIn=sum(grp.map(a=>a.inputs)), tS=sum(grp.map(a=>a.signups)), tG=sum(grp.map(a=>a.gna));
+    const iS=tIn>0?tS/tIn*100:null, iG=tIn>0?tG/tIn*100:null;
+    const aSig=act.length>0?tS/act.length:0;
+    return `<div class="cohort-card">
+      <span class="badge ${bcls[type]}">${type}</span><h3>${label[type]}</h3>
+      ${sr('Avg Calls / Day',aCD?aCD.toFixed(1):'—',cv(aCD,10,6))}
+      ${sr('Avg Call AHT',aAHT?aAHT.toFixed(1)+' min':'—')}
+      ${sr('Recorded Outbound %',aRec!==null?aRec.toFixed(0)+'%'*'—',cv(aRec,70,50))}
+      ${sr('Meeting Attendance %',aMtg!==null?aMtg.toFixed(0)+'%':'—',cv(aMtg,80,65))}
+      ${sr('Input → Signup %',iS!==null?iS.toFixed(1)+'%':'—',cv(iS,30,18))}
+      ${sr('Input → GNA %',iG!==null?iG.toFixed(1)+'%':'—',cv(iG,20,12))}
+      ${sr('Avg Signups / Agent',Math.round(aSig).toLocaleString(),cv(aSig,200,100))}
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER CHARTS  —  L3 stack-rank horizontal bars
+═══════════════════════════════════════════════════════════ */
+const L3_PALETTE = ['#00B896','#6C5FFC','#F5A623','#F04E4E','#00876F','#4A3DB8','#C07A00','#B83030','#3A9BC2','#8855CC','#888888','#2E6B4F'];
+let chartInst = {};
+
+function buildL3Rank(pool, metric, filterFn) {
+  const valid = pool.filter(a => a.active && a[metric]!==null && a[metric]!==undefined && (!filterFn||filterFn(a)));
+  const groups = {};
+  valid.forEach(a => { const m=(a.manager&&a.manager!=='Null')?a.manager:'Unassigned'; if(!groups[m]) groups[m]=[]; groups[m].push(a); });
+  const sortedMgrs = Object.keys(groups).sort((a,b)=>groups[b].reduce((s,x)=>s+safeN(x[metric]),0)-groups[a].reduce((s,x)=>s+safeN(x[metric]),0));
+  const mgrColor = {}; sortedMgrs.forEach((m,i)=>mgrColor[m]=L3_PALETTE[i%L3_PALETTE.length]);
+  const labels=[],data=[],bg=[],ttMgr=[];
+  sortedMgrs.forEach(m => {
+    [...groups[m]].sort((a,b)=>safeN(b[metric])-safeN(a[metric])).forEach(a => {
+      labels.push(a.name.split(' ').pop());
+      data.push(+safeN(a[metric]).toFixed(1));
+      bg.push(mgrColor[m]+'CC');
+      ttMgr.push(m);
+    });
+  });
+  return {labels,data,bg,ttMgr,sortedMgrs,mgrColor};
+}
+
+function renderCharts(pool) {
+  ['chartConversion','chartScatter'].forEach(id=>{ if(chartInst[id]){chartInst[id].destroy();delete chartInst[id];} });
+
+  const {sortedMgrs,mgrColor} = buildL3Rank(pool,'signups');
+  document.getElementById('chartLegend').innerHTML = sortedMgrs.map(m=>
+    `<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;background:var(--light);border:1px solid var(--border);border-radius:12px;padding:3px 9px">
+      <span style="width:9px;height:9px;border-radius:2px;background:${mgrColor[m]};display:inline-block"></span>${m}</span>`).join('');
+
+  const opts = (isPct, ttMgr) => ({
+    indexAxis:'y', responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false},
+      tooltip:{callbacks:{label:ctx=>isPct?`${ctx.raw}%  ·  Mgr: ${ttMgr[ctx.dataIndex]}`:`${ctx.raw.toLocaleString()}  ·  Mgr: ${ttMgr[ctx.dataIndex]}`}}},
+    scales:{
+      x:{beginAtZero:true, ticks:{callback:v=>isPct?v+'%':v.toLocaleString(),font:{size:10,family:"'Avenir Next',system-ui"}}, grid:{color:'#F0F0F0'}},
+      y:{ticks:{font:{size:10,family:"'Avenir Next',system-ui"}}, grid:{display:false}}
+    }
+  });
+
+  (()=>{ const {labels,data,bg,ttMgr}=buildL3Rank(pool,'signups');
+    chartInst['chartConversion']=new Chart(document.getElementById('chartConversion'),{type:'bar',
+      data:{labels,datasets:[{data,backgroundColor:bg,borderRadius:3,borderSkipped:false,barThickness:12}]},
+      options:opts(false,ttMgr)}); })();
+
+  (()=>{ const {labels,data,bg,ttMgr}=buildL3Rank(pool,'inputGna',a=>a.inputGna<100&&a.inputs>0);
+    chartInst['chartScatter']=new Chart(document.getElementById('chartScatter'),{type:'bar',
+      data:{labels,datasets:[{data,backgroundColor:bg,borderRadius:3,borderSkipped:false,barThickness:12}]},
+      options:opts(true,ttMgr)}); })();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER INSIGHTS
+═══════════════════════════════════════════════════════════ */
+function renderInsights(pool) {
+  const active = pool.filter(a=>a.active);
+  if (!active.length) {
+    document.getElementById('insightsGrid').innerHTML=`<div class="insight-card accent-gold" style="grid-column:1/-1"><div class="icon">🔍</div><h4>No Active Agents in View</h4><p>Adjust the L3 or Manager filter to see insights.</p></div>`;
+    return;
+  }
+  const avgIS = avg(active.filter(a=>a.inputSignup!==null&&a.inputSignup<100&&a.inputs>0).map(a=>a.inputSignup));
+  const avgIG = avg(active.filter(a=>a.inputGna!==null&&a.inputGna<100&&a.inputs>0).map(a=>a.inputGna));
+  const avgMtg = avg(active.filter(a=>a.mtgAttPct!==null&&a.mtgAttPct<=100).map(a=>a.mtgAttPct));
+
+  const insights = [];
+
+  // 1. High-volume/low-conversion
+  const hvlc = active.filter(a=>a.callsDay>15&&a.inputSignup!==null&&a.inputSignup<(avgIS||26)*0.5).sort((a,b)=>b.callsDay-a.callsDay).slice(0,2);
+  if (hvlc.length) insights.push({cls:'red',icon:'📉',title:'High-Volume / Low-Conversion Gap',
+    body:hvlc.map(a=>`<strong>${a.name} (${a.callsDay.toFixed(1)} calls/day, ${(a.inputSignup||0).toFixed(1)}% Input→Signup)</strong>`).join(' and ')+` — high activity but well below team avg of <strong>${(avgIS||0).toFixed(1)}%</strong>. Coaching on qualification recommended.`});
+
+  // 2. Top converters
+  const topC = active.filter(a=>a.inputSignup!==null&&a.inputSignup<100&&a.inputs>50).sort((a,b)=>b.inputSignup-a.inputSignup).slice(0,4);
+  if (topC.length) insights.push({cls:'teal',icon:'🏆',title:'Top Conversion Performers',
+    body:`Input→Signup leaders: ${topC.map(a=>`<strong>${a.name} (${a.inputSignup.toFixed(1)}%)</strong>`).join(', ')}. Their playbooks should be shared across the team.`});
+
+  // 3. Meeting attendance outliers
+  const lowM = active.filter(a=>a.mtgAttPct!==null&&a.mtgAttPct<65&&a.mtgAttPct>0).sort((a,b)=>a.mtgAttPct-b.mtgAttPct).slice(0,3);
+  if (lowM.length) insights.push({cls:'gold',icon:'📅',title:'Meeting Attendance Outliers',
+    body:`Below 65% attendance: ${lowM.map(a=>`<strong>${a.name} (${a.mtgAttPct}%)</strong>`).join(', ')}. Team avg: <strong>${avgMtg?avgMtg.toFixed(0)+'%':'—'}</strong>. Improving pre-meeting outreach could recover conversion.`});
+
+  // 4. FTE vs CW gap
+  const fteIG = avg(active.filter(a=>a.type==='FTE'&&a.inputGna!==null&&a.inputGna<100&&a.inputs>0).map(a=>a.inputGna));
+  const cwIG  = avg(active.filter(a=>a.type==='CW'&&a.inputGna!==null&&a.inputGna<100&&a.inputs>0).map(a=>a.inputGna));
+  if (fteIG!==null&&cwIG!==null&&Math.abs(fteIG-cwIG)>3) {
+    const gap=Math.abs(fteIG-cwIG).toFixed(1), leader=fteIG>cwIG?'FTE':'CW';
+    insights.push({cls:'purple',icon:'👥',title:'FTE vs CW Conversion Gap',
+      body:`FTE: <strong>${fteIG.toFixed(1)}% Input→GNA</strong> · CW: <strong>${cwIG.toFixed(1)}%</strong> — <strong>${gap} pt gap</strong>. ${leader==='FTE'?'CW agents may benefit from additional product training or targeting adjustments.':'FTE agents could adopt CW conversion approaches.'}`});
+  }
+
+  // 5. Inactive agents
+  const inact = pool.filter(a=>!a.active);
+  if (inact.length) {
+    const names=inact.slice(0,5).map(a=>`<strong>${a.name}</strong>`).join(', ');
+    const more=inact.length>5?` + ${inact.length-5} more`:'';
+    insights.push({cls:'red',icon:'😴',title:'Inactive Agents — Zero Activity',
+      body:`${inact.length} agent${inact.length!==1?'s':''} with zero FY26 activity: ${names}${more}. Status review and activation plans recommended.`});
+  }
+
+  // 6. Recording compliance
+  const fteRec = avg(active.filter(a=>a.type==='FTE'&&a.recPct!==null).map(a=>a.recPct));
+  const cwRec  = avg(active.filter(a=>a.type==='CW'&&a.recPct!==null).map(a=>a.recPct));
+  const lowRec = active.filter(a=>a.type==='FTE'&&a.recPct!==null&&a.recPct<20).sort((a,b)=>a.recPct-b.recPct).slice(0,3);
+  if (lowRec.length&&fteRec!==null) {
+    insights.push({cls:'teal',icon:'💡',title:'Outbound Recording Compliance',
+      body:`FTE avg: <strong>${fteRec.toFixed(0)}%</strong>${cwRec!==null?` vs. CW: <strong>${cwRec.toFixed(0)}%</strong>`:''} recorded outbound. Low-compliance FTE: ${lowRec.map(a=>`<strong>${a.name} (${a.recPct}%)</strong>`).join(', ')}.`});
+  }
+
+  if (!insights.length) {
+    const tS=sum(pool.map(a=>a.signups)),tG=sum(pool.map(a=>a.gna));
+    insights.push({cls:'teal',icon:'✅',title:'Performance Summary',
+      body:`<strong>${active.length}</strong> active agents · <strong>${tS.toLocaleString()}</strong> signups · <strong>${tG.toLocaleString()}</strong> GNA · <strong>${tS>0?(tG/tS*100).toFixed(1)+'%':'—'}</strong> Signup→GNA rate.`});
+  }
+  if (insights.length%2!==0) {
+    const tS=sum(pool.map(a=>a.signups)),tG=sum(pool.map(a=>a.gna));
+    insights.push({cls:'purple',icon:'📊',title:'Business Summary',
+      body:`<strong>${pool.length}</strong> total agents (<strong>${active.length}</strong> active) · <strong>${tS.toLocaleString()}</strong> signups · <strong>${tG.toLocaleString()}</strong> GNA · <strong>${avgIG?avgIG.toFixed(1)+'%':'—'}</strong> avg Input→GNA`});
+  }
+  document.getElementById('insightsGrid').innerHTML = insights.slice(0,6).map(i=>`
+    <div class="insight-card accent-${i.cls}"><div class="icon">${i.icon}</div><h4>${i.title}</h4><p>${i.body}</p></div>`).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RENDER ALL
+═══════════════════════════════════════════════════════════ */
+function renderAll() {
+  const pool = getEffectivePool();
+  renderKPIs(pool); renderCohorts(pool); renderCharts(pool); renderInsights(pool); renderTable();
+  if (currentTab === 'wow') renderWoW();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AGENT TABLE
+═══════════════════════════════════════════════════════════ */
+let sortCol='signups', sortDir=-1, currentView='group';
+let collapsedManagers = new Set();
+let filtered = [];
+
+// Populate table-level manager filter
+const tblMgrs = [...new Set(agents.map(a=>a.manager).filter(m=>m&&m!=='Null'))].sort();
+const mSel = document.getElementById('managerFilter');
+tblMgrs.forEach(m=>{const o=document.createElement('option');o.value=m;o.textContent=m;mSel.appendChild(o);});
+
+function bar(val, maxV, cls='') {
+  if (val===null||val===undefined) return '<span style="color:#DDD">—</span>';
+  const pct=Math.min(100,(val/maxV)*100).toFixed(1);
+  return `<div class="bar-cell"><span style="min-width:38px;text-align:right;font-variant-numeric:tabular-nums">${val.toLocaleString()}</span><div class="mini-bar"><div class="mini-bar-fill ${cls}" style="width:${pct}%"></div></div></div>`;
+}
+function pctBar(val) {
+  if (val===null||val===undefined) return '<span style="color:#DD">—</span>';
+  const cls=val>=30?'':val>=18?'warn':'bad';
+  const disp=val>100?val.toFixed(0)+'%*':val.toFixed(1)+'%';
+  return `<div class="bar-cell"><span style="min-width:44px;text-align:right;font-variant-numeric:tabular-nums">${disp}</span><div class="mini-bar"><div class="mini-bar-fill ${cls}" style="width:${Math.min(100,(val/60)*100).toFixed(1)}%"></div></div></div>`;
+}
+
+function setView(v) {
+  currentView=v;
+  document.getElementById('flatViewBtn').classList.toggle('active',v==='flat');
+  document.getElementById('groupViewBtn').classList.toggle('active',v==='group');
+  document.getElementById('expandAllBtn').classList.toggle('visible',v==='group');
+  document.getElementById('managerFilter').style.display=v==='group'?'none':'';
+  renderTable();
+}
+function toggleAllGroups() {
+  const btn=document.getElementById('expandAllBtn');
+  const pool=getEffectivePool();
+  const poolMgrs=[...new Set(pool.map(a=>a.manager))];
+  if(collapsedManagers.size===0){poolMgrs.forEach(m=>collapsedManagers.add(m));btn.textContent='Expand All';}
+  else{collapsedManagers.clear();btn.textContent='Collapse All';}
+  renderTable();
+}
+function toggleManager(mgr){if(collapsedManagers.has(mgr))collapsedManagers.delete(mgr);else collapsedManagers.add(mgr);renderTable();}
+
+function applyTableFilters(list) {
+  const s=document.getElementById('searchBox').value.toLowerCase();
+  const ty=document.getElementById('typeFilter').value;
+  const st=document.getElementById('statusFilter').value;
+  const mg=document.getElementById('managerFilter').value;
+  return list.filter(a=>{
+    if(ty&&a.type!==ty)return false;
+    if(st==='active'&&!a.active)return false;
+    if(st==='inactive'&&a.active)return false;
+    if(mg&&a.manager!==mg)return false;
+    if(s&&!a.name.toLowerCase().includes(s)&&!(a.manager||'').toLowerCase().includes(s))return false;
+    return true;
+  });
+}
+
+function agentRow(a) {
+  const pool=getEffectivePool();
+  const mxS=maxOf(pool,'signups')||1, mxG=maxOf(pool,'gna')||1, mxC=maxOf(pool,'totalCalls')||1;
+  const badge=`<span class="type-badge type-${a.type}">${a.type}</span>`;
+  const inTag=a.active?'':'<span class="inactive-tag"> inactive</span>';
+  const rowCls=['agent-row',a.active?'':'zero-row'].filter(Boolean).join(' ');
+  const showMgr=currentView==='flat';
+  return `<tr class="${rowCls}">
+    <td><strong>${a.name}</strong>${inTag}</td><td>${badge}</td>
+    ${showMgr?`<td style="color:var(--gray)">${a.manager==='Null'?'—':a.manager}</td>`:''}
+    <td class="right num">${a.inputs!==null&&a.inputs!==undefined?a.inputs.toLocaleString():'—'}</td>
+    <td>${bar(a.totalCalls,mxC)}</td>
+    <td class="right num">${a.callsDay>0?a.callsDay.toFixed(1):a.callsDay===0?'0.0':'—'}</td>
+    <td class="right num">${a.callAHT!==null&&a.callAHT!==undefined?a.callAHT.toFixed(1)+' min':'—'}</td>
+    <td class="right num">${a.recPct!==null&&a.recPct!==undefined?a.recPct+'%':'—'}</td>
+    <td class="right num">${a.mtgAttPct!==null&&a.mtgAttPct!==undefined&&a.mtgAttPct<=100?a.mtgAttPct+'%':'—'}</td>
+    <td>${bar(a.signups,mxS)}</td><td>${bar(a.gna,mxG)}</td>
+    <td>${pctBar(a.inputSignup)}</td><td>${pctBar(a.inputGna)}</td>
+  </tr>`;
+}
+
+function mgrSummaryRow(mgr,team) {
+  const act=team.filter(a=>a.active);
+  const collapsed=collapsedManagers.has(mgr);
+  const tS=sum(team.map(a=>a.signups)),tG=sum(team.map(a=>a.gna));
+  const aIS=avg(act.map(a=>a.inputSignup)), aIG=avg(act.map(a=>a.inputGna));
+  const aCpD=avg(act.filter(a=>a.callsDay>0).map(a=>a.callsDay));
+  const aMtg=avg(act.filter(a=>a.mtgAttPct&&a.mtgAttPct<=100).map(a=>a.mtgAttPct));
+  const iCnt=team.filter(a=>!a.active).length;
+  const sC=aIS!==null?(aIS>=30?'':aIS>=18?' warn':' bad'):'';
+  const gC=aIG!==null?(aIG>=20?'':aIG>=12?' warn':' bad'):'';
+  const pill=(l,v,c='')=>v!==null?`<span class="mgr-stat${c}">${l}: ${typeof v==='number'?v.toFixed(1):v}${l.includes('→')||l.includes('%')?'%':''}</span>`:'';
+  const types=[...new Set(team.map(a=>a.type))].map(t=>`<span class="type-badge type-${t}" style="font-size:10px">${t}</span>`).join(' ');
+  return `<tr class="mgr-row${collapsed?' collapsed':''}" onclick="toggleManager(${JSON.stringify(mgr)})">
+    <td colspan="${currentView==='flat'?13:12}">
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span class="mgr-name"><span class="mgr-chevron">${collapsed?'▶':'▼'}</span>
+          ${mgr==='Null'?'<em style="color:#AAA">No Manager Assigned</em>':mgr}
+          <span class="mgr-meta">${types} · ${team.length} agent${team.length!==1?'s':''}${iCnt>0?`<span style="font-size:11px;color:#AAA;margin-left:6px">${iCnt} inactive</span>`:''}</span>
+        </span>
+        ${pill('Signups',tS)}${pill('GNA',tG)}${aCpD?pill('Calls/Day',aCpD):''}${aMtg?pill('Mtg Att',aMtg):''}${aIS!==null?pill('In→Signup',aIS,sC):''}${aIG!==null?pill('In→GNA',aIG,gC):''}
+      </div>
+    </td>
+  </tr>`;
+}
+
+function renderTable() {
+  const tbody=document.getElementById('tableBody');
+  const thead=document.querySelector('#agentTable thead tr');
+  filtered=applyTableFilters(getEffectivePool());
+
+  document.querySelectorAll('thead th').forEach(th=>{
+    th.classList.toggle('sorted',th.dataset.col===sortCol);
+    const icon=th.querySelector('.sort-icon');
+    if(icon) icon.textContent=th.dataset.col===sortCol?(sortDir===1?'↑':'↓'):'↕';
+  });
+
+  if(currentView==='flat'){
+    thead.querySelectorAll('th[data-col="manager"]').forEach(th=>th.style.display='');
+    filtered.sort((a,b)=>{const av=a[sortCol]??-Infinity,bv=b[sortCol]??-Infinity;return(av<bv?-1:av>bv?1:0)*sortDir;});
+    document.getElementById('rowCount').textContent=`${filtered.length} agents`;
+    tbody.innerHTML=filtered.map(a=>agentRow(a)).join('');
+  } else {
+    thead.querySelectorAll('th[data-col="manager"]').forEach(th=>th.style.display='none');
+    const grps={};
+    filtered.forEach(a=>{const m=a.manager||'Null';if(!grps[m])grps[m]=[];grps[m].push(a);});
+    const sMgrs=Object.keys(grps).sort((a,b)=>sum(grps[b].map(x=>x.signups))-sum(grps[a].map(x=>x.signups)));
+    document.getElementById('rowCount').textContent=`${sMgrs.length} managers · ${filtered.length} agents`;
+    let html='';
+    sMgrs.forEach(mgr=>{
+      const team=grps[mgr];
+      team.sort((a,b)=>{const av=a[sortCol]??-Infinity,bv=b[sortCol]??-Infinity;return(av<bv?-1:av>bv?1:0)*sortDir;});
+      html+=mgrSummaryRow(mgr,team);
+      if(!collapsedManagers.has(mgr)) html+=team.map(a=>agentRow(a)).join('');
+    });
+    tbody.innerHTML=html;
+  }
+}
+
+document.querySelectorAll('thead th[data-col]').forEach(th=>{
+  th.addEventListener('click',()=>{
+    if(th.dataset.col==='manager')return;
+    if(sortCol===th.dataset.col)sortDir*=-1;
+    else{sortCol=th.dataset.col;sortDir=-1;}
+    renderTable();
+  });
+});
+['searchBox','typeFilter','statusFilter','managerFilter'].forEach(id=>document.getElementById(id).addEventListener('input',renderTable));
+
+/* ── INIT ── */
+refreshMgrDropdown();
+renderAll();
+setView('group');
+</script>
+</body>
+</html>
