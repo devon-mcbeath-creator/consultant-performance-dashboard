@@ -1165,7 +1165,7 @@ function renderCohorts(pool) {
       <span class="badge ${bcls[type]}">${type}</span><h3>${label[type]}</h3>
       ${sr('Avg Calls / Day',aCD?aCD.toFixed(1):'—',cv(aCD,10,6))}
       ${sr('Avg Call AHT',aAHT?aAHT.toFixed(1)+' min':'—')}
-      ${sr('Recorded Outbound %',aRec!==null?aRec.toFixed(0)+'%'*'—',cv(aRec,70,50))}
+      ${sr('Recorded Outbound %',aRec!==null?aRec.toFixed(0)+'%':'—',cv(aRec,70,50))}
       ${sr('Meeting Attendance %',aMtg!==null?aMtg.toFixed(0)+'%':'—',cv(aMtg,80,65))}
       ${sr('Input → Signup %',iS!==null?iS.toFixed(1)+'%':'—',cv(iS,30,18))}
       ${sr('Input → GNA %',iG!==null?iG.toFixed(1)+'%':'—',cv(iG,20,12))}
